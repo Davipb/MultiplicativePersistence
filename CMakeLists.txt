@@ -1,4 +1,7 @@
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.10)
+
+SET(CMAKE_C_STANDARD 11)
+SET(CMAKE_C_STANDARD_REQUIRED "ON")
 
 project(
     MultiplicativePersistence
@@ -14,3 +17,9 @@ add_executable(
     src/Number.c
 )
 
+if(CMAKE_C_COMPILER_ID STREQUAL "MSVC")
+    target_compile_options(MultiplicativePersistence PRIVATE "/sdl" "/W4" "/WX")
+    add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
+elseif(CMAKE_C_COMPILER_ID STREQUAL "GNU")
+    target_compile_options(MultiplicativePersistence PRIVATE "-Wall" "-Werror")
+endif()

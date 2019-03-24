@@ -16,8 +16,8 @@ static void ReportResult(size_t steps, LargeNumber* number)
     char* fileName = calloc(len + 1, sizeof(char));
     snprintf(fileName, len + 1, "result.%zu.txt", steps);
 
-    FILE* file;
-    if (fopen_s(&file, fileName, "a") != 0)
+    FILE* file = fopen(fileName, "a");
+    if (file == NULL)
     {
         fprintf(stderr, "Unable to open %s to report result", fileName);
         return;
@@ -35,7 +35,7 @@ static void ReportResult(size_t steps, LargeNumber* number)
 static size_t ReadConfig(char* buffer)
 {
     size_t result;
-    if (sscanf_s(buffer, "%zu", &result) != 1)
+    if (sscanf(buffer, "%zu", &result) != 1)
     {
         fprintf(stderr, "Invalid number '%s'", buffer);
         exit(EXIT_FAILURE);
