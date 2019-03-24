@@ -30,40 +30,46 @@ static void ReportResult(size_t steps, LargeNumber* number)
     fclose(file);
 }
 
-// Reads a value from a configuration file
-static size_t ReadConfig(const char* fileName)
+// Reads a numeric value from a string, automatically exiting on error
+static size_t ReadConfig(char* buffer)
 {
-    FILE* file;
-    if (fopen_s(&file, fileName, "r") != 0)
-    {
-        fprintf(stderr, "Unable to open %s", fileName);
-        exit(EXIT_FAILURE);
-    }
-
     size_t result;
-    if (fscanf_s(file, "%zu", &result) < 1)
+    if (sscanf_s(buffer, "%zu", &result) != 1)
     {
-        fprintf(stderr, "Unable to read an integer from %s", fileName);
+        fprintf(stderr, "Invalid number '%s'", buffer);
         exit(EXIT_FAILURE);
     }
 
-    fclose(file);
     return result;
 }
 
-void main()
+int main(int argc, char** argv)
 {
-    size_t start = ReadConfig("start.txt");
-    size_t end = ReadConfig("end.txt");
-    size_t threshold = ReadConfig("threshold.txt");
+    if (argc != 4)
+    {
+        printf("Usage: %s [start] [end] [threshold]\n", argv[0]);
+        printf("\tstart: Number of digits to start searching at\n");
+        printf("\tend: Number of digits to stop searching at\n");
+        printf("\tthreshold: The minimum number of steps that will be considered a result\n");
+        return EXIT_FAILURE;
+    }
+
+    size_t start = ReadConfig(argv[1]);
+    size_t end = ReadConfig(argv[2]);
+    size_t threshold = ReadConfig(argv[3]);
     
     printf("Starting at %zu digits\n", start);
     printf("Ending at %zu digits\n", end);
     printf("With a minimum of %zu steps\n", threshold);
     
     LargeNumber* current = SmallestWithDigits(start);
+    bool reportDigits = true;
+
     while (NumberOfDigits(current) <= end)
     {
+        if (reportDigits)
+            printf("Now at %zu digits\n", NumberOfDigits(current));
+
         size_t steps = 0;
         LargeNumber* acc = CopyNumber(current);
 
@@ -80,12 +86,7 @@ void main()
         if (steps >= threshold)
             ReportResult(steps, current);
 
-        size_t oldDigits = NumberOfDigits(current);
-        Increment(current);
-        size_t currentDigits = NumberOfDigits(current);
-
-        if (currentDigits != oldDigits)
-            printf("Now at %zu digits\n", currentDigits);
+        reportDigits = Increment(current);
     }
 
     FreeNumber(current);
