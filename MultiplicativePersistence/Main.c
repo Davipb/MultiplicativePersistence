@@ -64,16 +64,6 @@ void main()
     LargeNumber* current = SmallestWithDigits(start);
     while (NumberOfDigits(current) <= end)
     {
-        size_t oldDigits = NumberOfDigits(current);
-        Increment(current);
-        size_t currentDigits = NumberOfDigits(current);
-
-        if (currentDigits != oldDigits)
-            printf("Checking numbers with %zu digits\n", currentDigits);
-        
-        if (!IsInSearchSpace(current))
-            continue;
-
         size_t steps = 0;
         LargeNumber* acc = CopyNumber(current);
 
@@ -89,6 +79,13 @@ void main()
 
         if (steps >= threshold)
             ReportResult(steps, current);
+
+        size_t oldDigits = NumberOfDigits(current);
+        Increment(current);
+        size_t currentDigits = NumberOfDigits(current);
+
+        if (currentDigits != oldDigits)
+            printf("Now at %zu digits\n", currentDigits);
     }
 
     FreeNumber(current);
