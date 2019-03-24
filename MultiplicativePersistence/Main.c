@@ -1,38 +1,65 @@
 #include "Number.h"
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <inttypes.h>
 
-void PrintResult(FILE* file, uintmax_t steps, LargeNumber* number)
+// Reports that a result has been found
+static void ReportResult(size_t steps, LargeNumber* number)
 {
-    fprintf_s(file, "%"PRIuMAX" steps: ", steps);
-    FPrintNumber(file, number);
-    fprintf_s(file, "\n");
-}
+    printf("%zu steps: ", steps);
+    FPrintNumber(stdout, number);
+    printf("\n");
 
-void main(int argc, char** argv)
-{
-    if (argc < 4)
+    int len = snprintf(NULL, 0, "result.%zu.txt", steps);
+    char* fileName = calloc(len + 1, sizeof(char));
+    snprintf(fileName, len + 1, "result.%zu.txt", steps);
+
+    FILE* file;
+    if (fopen_s(&file, fileName, "a") != 0)
     {
-        printf("Usage: %s [starting digits] [max digits] [threshold]\n", argv[0]);
-        printf("\tstarting digits: The number of digits where the searching will start\n");
-        printf("\tmax digits: The number of digits where the searching will stop\n");
-        printf("\tthreshold: The minimum number of steps a number has to hit for it to be reported as a result\n");
+        fprintf(stderr, "Unable to open %s to report result", fileName);
         return;
     }
 
-    uintmax_t start;
-    sscanf_s(argv[1], "%"PRIuMAX, &start);
+    free(fileName);
 
-    uintmax_t end;
-    sscanf_s(argv[2], "%"PRIuMAX, &end);
+    FPrintNumber(file, number);
+    fprintf(file, "\n");
 
-    uintmax_t threshold;
-    sscanf_s(argv[3], "%"PRIuMAX, &threshold);
+    fclose(file);
+}
 
-    printf("Starting at %"PRIuMAX" digits\n", start);
-    printf("Ending at %"PRIuMAX" digits\n", end);
-    printf("With a minimum of %"PRIuMAX" steps\n", threshold);
+// Reads a value from a configuration file
+static size_t ReadConfig(const char* fileName)
+{
+    FILE* file;
+    if (fopen_s(&file, fileName, "r") != 0)
+    {
+        fprintf(stderr, "Unable to open %s", fileName);
+        exit(EXIT_FAILURE);
+    }
+
+    size_t result;
+    if (fscanf_s(file, "%zu", &result) < 1)
+    {
+        fprintf(stderr, "Unable to read an integer from %s", fileName);
+        exit(EXIT_FAILURE);
+    }
+
+    fclose(file);
+    return result;
+}
+
+void main()
+{
+    size_t start = ReadConfig("start.txt");
+    size_t end = ReadConfig("end.txt");
+    size_t threshold = ReadConfig("threshold.txt");
+    
+    printf("Starting at %zu digits\n", start);
+    printf("Ending at %zu digits\n", end);
+    printf("With a minimum of %zu steps\n", threshold);
     
     LargeNumber* current = SmallestWithDigits(start);
     while (NumberOfDigits(current) <= end)
@@ -47,7 +74,7 @@ void main(int argc, char** argv)
         if (!IsInSearchSpace(current))
             continue;
 
-        uintmax_t steps = 0;
+        size_t steps = 0;
         LargeNumber* acc = CopyNumber(current);
 
         while (NumberOfDigits(acc) > 1)
@@ -61,14 +88,7 @@ void main(int argc, char** argv)
         FreeNumber(acc);
 
         if (steps >= threshold)
-        {
-            PrintResult(stdout, steps, current);
-
-            FILE* resultsFile;
-            fopen_s(&resultsFile, "results.txt", "a");
-            PrintResult(resultsFile, steps, current);
-            fclose(resultsFile);
-        }
+            ReportResult(steps, current);
     }
 
     FreeNumber(current);
