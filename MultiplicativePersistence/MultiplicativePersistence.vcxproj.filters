@@ -18,15 +18,9 @@
     <ClInclude Include="Number.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ErrorHandling.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Number.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="ErrorHandling.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Main.c">

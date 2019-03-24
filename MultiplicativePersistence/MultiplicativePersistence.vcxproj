@@ -83,11 +83,9 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="ErrorHandling.h" />
     <ClInclude Include="Number.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="ErrorHandling.c" />
     <ClCompile Include="Main.c" />
     <ClCompile Include="Number.c" />
   </ItemGroup>

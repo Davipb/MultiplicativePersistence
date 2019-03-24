@@ -33,17 +33,17 @@ void main(int argc, char** argv)
     printf("Starting at %"PRIuMAX" digits\n", start);
     printf("Ending at %"PRIuMAX" digits\n", end);
     printf("With a minimum of %"PRIuMAX" steps\n", threshold);
-
-    FILE* resultsFile;
-    fopen_s(&resultsFile, "results.txt", "a");
-
+    
     LargeNumber* current = SmallestWithDigits(start);
     while (NumberOfDigits(current) <= end)
     {
-        LargeNumber* next = Increment(current);
-        FreeNumber(current);
-        current = next;
+        size_t oldDigits = NumberOfDigits(current);
+        Increment(current);
+        size_t currentDigits = NumberOfDigits(current);
 
+        if (currentDigits != oldDigits)
+            printf("Checking numbers with %zu digits\n", currentDigits);
+        
         if (!IsInSearchSpace(current))
             continue;
 
@@ -62,8 +62,12 @@ void main(int argc, char** argv)
 
         if (steps >= threshold)
         {
-            PrintResult(resultsFile, steps, current);
             PrintResult(stdout, steps, current);
+
+            FILE* resultsFile;
+            fopen_s(&resultsFile, "results.txt", "a");
+            PrintResult(resultsFile, steps, current);
+            fclose(resultsFile);
         }
     }
 

@@ -6,9 +6,6 @@
 
 typedef struct LargeNumber LargeNumber;
 
-// Makes a large number with a specified value
-LargeNumber* MakeLarge(uintmax_t value);
-
 // Creates a large number that represents the smallest possible number with the specified number of
 // digits.
 LargeNumber* SmallestWithDigits(size_t digits);
@@ -19,14 +16,8 @@ void FreeNumber(LargeNumber* number);
 // Makes a copy of a number
 LargeNumber* CopyNumber(LargeNumber* number);
 
-// Adds two large numbers
-LargeNumber* Add(LargeNumber* a, LargeNumber* b);
-
-// Increments a large number by one
-LargeNumber* Increment(LargeNumber* number);
-
-// Multiplies two large numbers
-LargeNumber* Multiply(LargeNumber* a, LargeNumber* b);
+// Increments a large number in-place
+void Increment(LargeNumber* number);
 
 // Multiplies the digits of a large number, resulting in another large number
 LargeNumber* MultiplyDigits(LargeNumber* number);

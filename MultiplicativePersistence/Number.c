@@ -54,9 +54,11 @@ static void ResizeNumber(LargeNumber* number, size_t newSize)
 // the number of digits it has.
 static void TrimNumber(LargeNumber* number)
 {
+    if (number->Size == 0) return;
+
     size_t newSize = number->Size;
 
-    while (number->Digits[newSize - 1] == 0)
+    while (newSize > 0 && number->Digits[newSize - 1] == 0)
         newSize--;
 
     ResizeNumber(number, newSize);
@@ -96,7 +98,8 @@ LargeNumber* CopyNumber(LargeNumber* number)
     return copy;
 }
 
-LargeNumber* MakeLarge(uintmax_t value)
+// Makes a large number with the specified numeric value
+static LargeNumber* MakeLarge(uintmax_t value)
 {
     LargeNumber* number = NewNumber(0);
 
@@ -118,87 +121,49 @@ LargeNumber* SmallestWithDigits(size_t digits)
     return result;
 }
 
-// Adds two large numbers
-LargeNumber* Add(LargeNumber* a, LargeNumber* b)
+void Increment(LargeNumber* number)
 {
-    LargeNumber* sum = NewNumber(max(a->Size, b->Size));
+    SetDigit(number, 0, GetDigit(number, 0) + 1);
+
+    size_t i = 0;
+    while (GetDigit(number, i) >= BASE)
+    {
+        Digit carry = GetDigit(number, i) / BASE;
+        SetDigit(number, i, GetDigit(number, i) % BASE);
+        SetDigit(number, i + 1, GetDigit(number, i + 1) + carry);
+
+        i++;
+    }
+}
+
+// Multiplies a large number by the value of a digit in-place
+static void Multiply(LargeNumber* number, Digit digit)
+{
+    if (digit == 0)
+    {
+        ResizeNumber(number, 0);
+        return;
+    }
 
     Digit carry = 0;
-    for (size_t i = 0; i < sum->Size; i++)
+    for (size_t i = 0; i < number->Size; i++)
     {
-        Digit value = GetDigit(a, i) + GetDigit(b, i) + carry;
+        Digit value = GetDigit(number, i) * digit + carry;
         carry = value / BASE;
-        SetDigit(sum, i, value %= BASE);
+        SetDigit(number, i, value % BASE);
     }
 
     if (carry != 0)
-        SetDigit(sum, sum->Size, carry);
-
-    TrimNumber(sum);
-    return sum;
-}
-
-LargeNumber* Increment(LargeNumber* number)
-{
-    LargeNumber* one = MakeLarge(1);
-    LargeNumber* result = Add(number, one);
-    FreeNumber(one);
-    return result;
-}
-
-// Multiplies two large numbers
-LargeNumber* Multiply(LargeNumber* a, LargeNumber* b)
-{
-    // If either number has size 0, return 0
-    if (a->Size == 0 || b->Size == 0)
-        return NewNumber(0);
-
-    LargeNumber* result = NewNumber(max(a->Size, b->Size));
-
-    for (size_t bIndex = 0; bIndex < b->Size; bIndex++)
-    {
-        Digit multiplicand = GetDigit(b, bIndex);
-
-        Digit carry = 0;
-        for (size_t aIndex = 0; aIndex < a->Size; aIndex++)
-        {
-            size_t resultIndex = bIndex + aIndex;
-
-            Digit value = GetDigit(a, aIndex) * multiplicand + GetDigit(result, resultIndex) + carry;
-            carry = value / BASE;
-            SetDigit(result, resultIndex, value % BASE);
-        }
-
-        if (carry != 0)
-            SetDigit(result, bIndex + a->Size, carry);
-    }
-
-    TrimNumber(result);
-    return result;
+        SetDigit(number, number->Size, carry);
 }
 
 LargeNumber* MultiplyDigits(LargeNumber* number)
 {
-    if (number->Size == 0)
-        return MakeLarge(0);
+    LargeNumber* acc = MakeLarge(GetDigit(number, 0));
 
-    if (number->Size == 1)
-        return MakeLarge(GetDigit(number, 0));
-
-    LargeNumber* acc = MakeLarge(1);
-
-    for (size_t i = 0; i < number->Size; i++)
-    {
-        LargeNumber* digit = MakeLarge(GetDigit(number, i));
-        LargeNumber* newAcc = Multiply(acc, digit);
-
-        FreeNumber(digit);
-        FreeNumber(acc);
-
-        acc = newAcc;
-    }
-
-    TrimNumber(acc);
+    for (size_t i = 1; i < number->Size; i++)
+        Multiply(acc, GetDigit(number, i));
+    
     return acc;
 }
 
@@ -222,6 +187,9 @@ bool IsInSearchSpace(LargeNumber* number)
             return false;
 
         if (GetDigit(number, i) < GetDigit(number, i + 1)) 
+            return false;
+
+        if (GetDigit(number, i) == 1 && BASE != 2)
             return false;
     }
 
