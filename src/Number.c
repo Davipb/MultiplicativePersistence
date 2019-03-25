@@ -48,7 +48,7 @@ static void ResizeNumber(LargeNumber* number, size_t newSize)
 {
     if (number->Size == newSize) return;
 
-    number->Digits = realloc(number->Digits, newSize);
+    number->Digits = realloc(number->Digits, newSize * sizeof(Digit));
 
     for (size_t i = number->Size; i < newSize; i++)
         number->Digits[i] = 0;
