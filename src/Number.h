@@ -2,6 +2,7 @@
 
 #include <stdio.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 // A type that can hold unsigned integers of arbitrarily large sizes, bounded only
 // by the vailable memory
@@ -24,8 +25,22 @@ bool Increment(LargeNumber* number);
 // Multiplies the digits of a large number, resulting in another large number
 LargeNumber* MultiplyDigits(LargeNumber* number);
 
+// Compares two large numbers
+// Returns -1 if a is smaller than b
+// Returns 0 if a is equal to b
+// Returns 1 if a is greater than b
+int8_t Compare(LargeNumber* a, LargeNumber* b);
+
 // Gets the number of digits of a large number
 size_t NumberOfDigits(LargeNumber* number);
 
-// Prints a number to a stream
+// Prints a large number to a stream
 void FPrintNumber(FILE* file, LargeNumber* number);
+
+// Reads a large number from a stream
+// Returns NULL if the reading failed for any reason
+LargeNumber* FScanNumber(FILE* file);
+
+// Reads a large number from a string
+// Returns NULL if the reading failed for any reason
+LargeNumber* SScanNumber(char* string);

@@ -5,6 +5,8 @@
 #include <inttypes.h>
 #include <time.h>
 
+#define FAIL(...) { fprintf(stderr, __VA_ARGS__); exit(EXIT_FAILURE); }
+
 // Reports that a result has been found
 static void ReportResult(size_t steps, LargeNumber* number)
 {
@@ -31,19 +33,6 @@ static void ReportResult(size_t steps, LargeNumber* number)
     fclose(file);
 }
 
-// Reads a numeric value from a string, automatically exiting on error
-static size_t ReadConfig(char* buffer)
-{
-    size_t result;
-    if (sscanf(buffer, "%zu", &result) != 1)
-    {
-        fprintf(stderr, "Invalid number '%s'", buffer);
-        exit(EXIT_FAILURE);
-    }
-
-    return result;
-}
-
 // Formats and prints the duration between two points in time to stdout
 static void PrintDiff(time_t start, time_t end)
 {
@@ -62,6 +51,55 @@ static void PrintTimeStats(time_t programStart, time_t deltaStart, time_t now)
     printf("\n");
 }
 
+static void ReadArgConfig(int argc, char** argv, uintmax_t* threshold, LargeNumber** start, LargeNumber** end)
+{
+    if (sscanf(argv[1], "%zu", threshold) < 1) 
+        FAIL("Invalid threshold %s", argv[1]);
+    
+    *start = NULL;
+    if (argc >= 3)
+    {
+        *start = SScanNumber(argv[2]);
+        if (*start == NULL) FAIL("Invalid start number %s", argv[2]);
+    }
+
+    *end = NULL;
+    if (argc >= 4)
+    {
+        *end = SScanNumber(argv[3]);
+        if (*end == NULL) FAIL("Invalid end number %s", argv[3]);   
+    }
+}
+
+static void ReadFileConfig(uintmax_t* threshold, LargeNumber** start, LargeNumber** end)
+{
+    FILE* thresholdFile = fopen("threshold.txt", "r");
+    if (thresholdFile == NULL) FAIL("Unable to open threshold.txt");
+
+    if (fscanf(thresholdFile, "%zu", threshold) < 1) FAIL("Invalid threshold number in threshold.txt");
+    fclose(thresholdFile);
+
+    *start = NULL;
+    FILE* startFile = fopen("start.txt", "r");
+    if (startFile != NULL)
+    {
+        *start = FScanNumber(startFile);
+        if (*start == NULL) FAIL("Invalid start number in start.txt");
+
+        fclose(startFile);
+    }
+
+    *end = NULL;
+    FILE* endFile = fopen("end.txt", "r");
+    if (endFile != NULL)
+    {
+        *end = FScanNumber(endFile);
+        if (*end == NULL) FAIL("Invalid end number in end.txt");
+
+        fclose(endFile);
+    }
+}
+
 int main(int argc, char** argv)
 {
     // Disable stdout bufferring
@@ -71,31 +109,37 @@ int main(int argc, char** argv)
     // from the eventual stdout prints
     setbuf(stdout, NULL);
 
-    if (argc != 4)
+    uintmax_t threshold;
+    LargeNumber* start;
+    LargeNumber* end;
+    if (argc > 1)
+        ReadArgConfig(argc, argv, &threshold, &start, &end);
+    else
+        ReadFileConfig(&threshold, &start, &end);
+
+    if (start == NULL) start = SmallestWithDigits(1);
+
+    printf("Starting at ");
+    FPrintNumber(stdout, start);
+    printf("\n");
+
+    if (end != NULL)
     {
-        printf("Usage: %s [start] [end] [threshold]\n", argv[0]);
-        printf("\tstart: Number of digits to start searching at\n");
-        printf("\tend: Number of digits to stop searching at\n");
-        printf("\tthreshold: The minimum number of steps that will be considered a result\n");
-        return EXIT_FAILURE;
+        printf("Ending at ");
+        FPrintNumber(stdout, end);
+        printf("\n");
     }
 
-    size_t start = ReadConfig(argv[1]);
-    size_t end = ReadConfig(argv[2]);
-    size_t threshold = ReadConfig(argv[3]);
-    
-    printf("Starting at %zu digits\n", start);
-    printf("Ending at %zu digits\n", end);
-    printf("With a minimum of %zu steps\n", threshold);    
+    printf("With a minimum of %"PRIuMAX" steps\n", threshold);    
     
     time_t programStart = time(NULL);
     uintmax_t numbersFound = 0;
 
-    LargeNumber* current = SmallestWithDigits(start);
+    LargeNumber* current = start;
     time_t digitsStart = programStart;
     bool reportDigits = true;
     
-    while (NumberOfDigits(current) <= end)
+    while (end == NULL || Compare(current, end) <= 0)
     {
         if (reportDigits)
         {
@@ -131,6 +175,7 @@ int main(int argc, char** argv)
     }
 
     FreeNumber(current);
+    FreeNumber(end);
 
     time_t now = time(NULL);
 

@@ -4,11 +4,21 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <math.h>
+#include <string.h>
 
 // Take care when changing the base below
 // First, verify that the typedef of 'Digit' can hold (Base - 1)^2 + floor((Base - 1)^2 / Base)
 // Then, take a look at the 'BASE DEPENDANT' functions below and adjust them to fit your new base
+// Lastly, if your base is bigger than 63, adjust DigitChars
 #define BASE 10
+
+// The character that should appear at the start of a large number string for it to be considered
+// a number of digits instead of a regular number
+#define SCAN_DIGIT_CHAR '@'
+
+// The characters that will be used to represent the digits of a large number
+// when reading and writing to a text stream
+static char DigitChars[] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 
 // A type that can hold a single digit of a large number
 // Ensure that this type can hold at least (Base - 1)^2 + floor((Base - 1)^2 / Base)
@@ -154,12 +164,26 @@ LargeNumber* MultiplyDigits(LargeNumber* number)
     for (size_t i = 1; i < number->Size; i++)
         Multiply(acc, GetDigit(number, i));
     
+    TrimNumber(acc);
     return acc;
+}
+
+int8_t Compare(LargeNumber* a, LargeNumber* b)
+{
+    if (a->Size > b->Size) return 1;
+    if (a->Size < b->Size) return -1;
+
+    for (size_t i = a->Size; i > 0; i--)
+    {
+        if (GetDigit(a, i - 1) > GetDigit(b, i - 1)) return 1;
+        if (GetDigit(a, i - 1) < GetDigit(b, i - 1)) return -1;
+    }
+
+    return 0;
 }
 
 size_t NumberOfDigits(LargeNumber* number)
 {
-    TrimNumber(number);
     if (number->Size <= 1) return 1;
     return number->Size;
 }
@@ -168,24 +192,99 @@ void FPrintNumber(FILE* file, LargeNumber* number)
 {
     if (number->Size == 0)
     {
-        fprintf(file, "0");
+        fprintf(file, "%c", DigitChars[0]);
         return;
     }
 
     for (size_t i = number->Size; i > 0; i--)
     {
-        char c;
-        Digit digit = GetDigit(number, i - 1);
-
-        // Use 0 - 10 then A - Z
-
-        if (digit < 10)
-            c = '0' + digit;
-        else
-            c = 'A' + (digit - 10);
-
+        char c = DigitChars[GetDigit(number, i - 1)];
         fprintf(file, "%c", c);
     }
+}
+
+LargeNumber* FScanNumber(FILE* file)
+{
+    int start = fgetc(file);
+    if (start == EOF) return NULL;
+    
+    if (start == SCAN_DIGIT_CHAR)
+    {
+        size_t size;
+        if (fscanf(file, "%zu", &size) < 1) return NULL;
+        return SmallestWithDigits(size);
+    }
+
+    ungetc(start, file);
+
+    size_t bufferSize = 0;
+    size_t bufferAllocSize = 1;
+    Digit* buffer = calloc(bufferAllocSize, sizeof(Digit));
+
+    int read;
+    while((read = fgetc(file)) != EOF){
+        char* pointer = strchr(DigitChars, read);
+        if (pointer == NULL) 
+        {
+            ungetc(read, file);
+            break;
+        }
+
+        if (bufferSize == bufferAllocSize)
+        {
+            bufferAllocSize *= 2;
+            buffer = realloc(buffer, sizeof(Digit) * bufferAllocSize);
+        }
+
+        buffer[bufferSize++] = (Digit)(pointer - DigitChars);        
+    }
+
+    LargeNumber* number = NewNumber(bufferSize);
+    for (size_t i = 0; i < bufferSize; i++)
+        SetDigit(number, i, buffer[bufferSize - i - 1]);
+
+    free(buffer);
+
+    TrimNumber(number);
+    return number;    
+}
+
+LargeNumber* SScanNumber(char* string)
+{
+    if (string[0] == SCAN_DIGIT_CHAR)
+    {
+        size_t size;
+        if (sscanf(string + 1, "%zu", &size) < 1) return NULL;
+        return SmallestWithDigits(size);
+    }
+
+    size_t bufferSize = 0;
+    size_t bufferAllocSize = 1;
+    Digit* buffer = calloc(bufferAllocSize, sizeof(Digit));
+
+    while(*string != 0){
+        char* pointer = strchr(DigitChars, *string);
+        if (pointer == NULL)
+            break;
+
+        if (bufferSize == bufferAllocSize)
+        {
+            bufferAllocSize *= 2;
+            buffer = realloc(buffer, sizeof(Digit) * bufferAllocSize);
+        }
+
+        buffer[bufferSize++] = (Digit)(pointer - DigitChars);  
+        string++;      
+    }
+
+    LargeNumber* number = NewNumber(bufferSize);
+    for (size_t i = 0; i < bufferSize; i++)
+        SetDigit(number, i, buffer[bufferSize - i - 1]);
+
+    free(buffer);
+
+    TrimNumber(number);
+    return number;    
 }
 
 /*
