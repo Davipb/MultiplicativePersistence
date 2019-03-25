@@ -18,18 +18,22 @@ For more information, please check the [Numberphile video that insipried this pr
 ## Usage
 The program has three startup values:
 * `threshold`: The minimum amount of digit multiplication steps a number must hit to be considered a result
-* `start` (Optional): The number to start searching at. If not set, defaults to the smallest number with 1 digit
-* `end` (Optional): The number to stop searching at. If not set, the program will never stop on its own. 
+* `start` (Optional): The number to start searching at. If not set, defaults to `@1` (see usage of `@` below).
+* `end` (Optional): The number to stop searching at. If not set, the program will never stop searching.
+
 If the program is executed without any arguments, it reads the startup values from files in the current working directory: `threshold.txt`, `start.txt`, and `end.txt`.
 If executed with arguments, it reads the startup values from the arguments, in the order `threshold` `start` `end`.
 
 For `start` and `end`, you can prepend `@` to the number to specify an amount of digits instead of an actual number (both in file mode and in argument mode).
 For example, to search for numbers with at least 5 steps between 100 and 200 digits, use the arguments `5 @100 @200`.
 
-Once a result is found (a number with a number of steps higher or equal to `threshold`), the number is appended as a new line to a file named `result.(steps).txt` on the working directory, where `(steps)` is the number of steps of that number.
+Once a result is found (a number with an amount of multiplication steps higher or equal to `threshold`), the number is appended as a new line to a file named `result.(steps).txt` on the working directory, where `(steps)` is the number of steps of that number.
+
+If the startup values were read from files, the program will write the next number it would check to `start.txt` upon termination, even if it was terminated via Ctrl + C or the Task Manager/`SIGTERM`.
+This allows the program to be installed as a "service" and started/stopped without losing progress.
 
 The search is not "dumb": It uses known properties of record-holding numbers discovered by David A. Corneth to significantly reduce the amount of numbers that have to be checked.
 
 ## Adapting for other bases
 Only the search space algorithm based on David A. Corneth's discoveries is dependant on the base of the numbers, the rest of the program is completely base-agnostic.
-For more information on how to adapt the program for other bases, check the base definition at the top of `Number.c`.
+For more information on how to adapt the program for other bases, check the documentation comment for the base definition at the top of `Number.c`.

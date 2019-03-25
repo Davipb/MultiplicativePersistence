@@ -4,8 +4,20 @@
 #include <stdlib.h>
 #include <inttypes.h>
 #include <time.h>
+#include <signal.h>
 
 #define FAIL(...) { fprintf(stderr, __VA_ARGS__); exit(EXIT_FAILURE); }
+
+// If the system has requested that the program be stopped
+static volatile bool StopRequested = false;
+
+// Handles a signal received from the system
+// signal: The signal that was received
+void SignalHandler(int signal)
+{
+    if (signal == SIGINT || signal == SIGTERM)
+        StopRequested = true;
+}
 
 // Reports that a result has been found
 static void ReportResult(size_t steps, LargeNumber* number)
@@ -40,8 +52,13 @@ static void PrintDiff(time_t start, time_t end)
     printf("%dd %dh %dmin %ds", (int)(seconds / 86400), (int)(seconds / 3600), (int)(seconds / 60) % 60, (int)seconds % 60);
 }
 
-static void PrintTimeStats(time_t programStart, time_t deltaStart, time_t now)
+// Prints time statistics to stdout
+// programStart: When the program was started
+// deltaStart: When the last unit of work was started
+static void PrintTimeStats(time_t programStart, time_t deltaStart)
 {
+    time_t now = time(NULL);
+
     printf("Delta time: ");
     PrintDiff(deltaStart, now);
     printf("\n");
@@ -51,6 +68,7 @@ static void PrintTimeStats(time_t programStart, time_t deltaStart, time_t now)
     printf("\n");
 }
 
+// Reads the program configuration its command-line arguments
 static void ReadArgConfig(int argc, char** argv, uintmax_t* threshold, LargeNumber** start, LargeNumber** end)
 {
     if (sscanf(argv[1], "%zu", threshold) < 1) 
@@ -71,6 +89,7 @@ static void ReadArgConfig(int argc, char** argv, uintmax_t* threshold, LargeNumb
     }
 }
 
+// Reads the program configuration from files
 static void ReadFileConfig(uintmax_t* threshold, LargeNumber** start, LargeNumber** end)
 {
     FILE* thresholdFile = fopen("threshold.txt", "r");
@@ -109,13 +128,18 @@ int main(int argc, char** argv)
     // from the eventual stdout prints
     setbuf(stdout, NULL);
 
+    signal(SIGTERM, &SignalHandler);
+    signal(SIGINT, &SignalHandler);
+
     uintmax_t threshold;
     LargeNumber* start;
     LargeNumber* end;
-    if (argc > 1)
-        ReadArgConfig(argc, argv, &threshold, &start, &end);
-    else
+
+    bool fromFile = argc <= 1;
+    if (fromFile)
         ReadFileConfig(&threshold, &start, &end);
+    else
+        ReadArgConfig(argc, argv, &threshold, &start, &end);
 
     if (start == NULL) start = SmallestWithDigits(1);
 
@@ -139,17 +163,15 @@ int main(int argc, char** argv)
     time_t digitsStart = programStart;
     bool reportDigits = true;
     
-    while (end == NULL || Compare(current, end) <= 0)
+    while (!StopRequested && (end == NULL || Compare(current, end) <= 0))
     {
         if (reportDigits)
         {
-            time_t now = time(NULL);
-
             printf("\n");
             printf("Now at %zu digits\n", NumberOfDigits(current));
-            PrintTimeStats(programStart, digitsStart, now);
+            PrintTimeStats(programStart, digitsStart);
 
-            digitsStart = now;
+            digitsStart = time(NULL);
         }
 
         size_t steps = 0;
@@ -174,13 +196,25 @@ int main(int argc, char** argv)
         reportDigits = Increment(current);
     }
 
+    if (fromFile)
+    {
+        FILE* file = fopen("start.txt", "w");
+        if (file == NULL)
+        {
+            fprintf(stderr, "Unable to open start.txt");
+        }
+        else
+        {
+            FPrintNumber(file, current);
+            fclose(file);
+        }
+    }
+
     FreeNumber(current);
     FreeNumber(end);
-
-    time_t now = time(NULL);
 
     printf("\n");
     printf("Finished\n");
     printf("Found %"PRIuMAX" results\n", numbersFound);
-    PrintTimeStats(programStart, digitsStart, now);
+    PrintTimeStats(programStart, digitsStart);
 }
