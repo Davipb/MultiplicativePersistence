@@ -64,6 +64,13 @@ static void PrintTimeStats(time_t programStart, time_t deltaStart, time_t now)
 
 int main(int argc, char** argv)
 {
+    // Disable stdout bufferring
+    // This slows down write operations, but ensures that results and progress reports will
+    // be written as soon as available to the ouput terminal or log file
+    // The processing time needed to check our numbers will vastly overshadow any small speed loss
+    // from the eventual stdout prints
+    setbuf(stdout, NULL);
+
     if (argc != 4)
     {
         printf("Usage: %s [start] [end] [threshold]\n", argv[0]);
