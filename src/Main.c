@@ -33,7 +33,7 @@ static void ReportResult(size_t steps, LargeNumber* number)
     FILE* file = fopen(fileName, "a");
     if (file == NULL)
     {
-        fprintf(stderr, "Unable to open %s to report result", fileName);
+        fprintf(stderr, "Unable to open %s to report result\n", fileName);
         return;
     }
 
@@ -72,20 +72,20 @@ static void PrintTimeStats(time_t programStart, time_t deltaStart)
 static void ReadArgConfig(int argc, char** argv, uintmax_t* threshold, LargeNumber** start, LargeNumber** end)
 {
     if (sscanf(argv[1], "%zu", threshold) < 1) 
-        FAIL("Invalid threshold %s", argv[1]);
+        FAIL("Invalid threshold %s\n", argv[1]);
     
     *start = NULL;
     if (argc >= 3)
     {
         *start = SScanNumber(argv[2]);
-        if (*start == NULL) FAIL("Invalid start number %s", argv[2]);
+        if (*start == NULL) FAIL("Invalid start number %s\n", argv[2]);
     }
 
     *end = NULL;
     if (argc >= 4)
     {
         *end = SScanNumber(argv[3]);
-        if (*end == NULL) FAIL("Invalid end number %s", argv[3]);   
+        if (*end == NULL) FAIL("Invalid end number %s\n", argv[3]);   
     }
 }
 
@@ -93,9 +93,9 @@ static void ReadArgConfig(int argc, char** argv, uintmax_t* threshold, LargeNumb
 static void ReadFileConfig(uintmax_t* threshold, LargeNumber** start, LargeNumber** end)
 {
     FILE* thresholdFile = fopen("threshold.txt", "r");
-    if (thresholdFile == NULL) FAIL("Unable to open threshold.txt");
+    if (thresholdFile == NULL) FAIL("Unable to open threshold.txt\n");
 
-    if (fscanf(thresholdFile, "%zu", threshold) < 1) FAIL("Invalid threshold number in threshold.txt");
+    if (fscanf(thresholdFile, "%zu", threshold) < 1) FAIL("Invalid threshold number in threshold.txt\n");
     fclose(thresholdFile);
 
     *start = NULL;
@@ -103,7 +103,7 @@ static void ReadFileConfig(uintmax_t* threshold, LargeNumber** start, LargeNumbe
     if (startFile != NULL)
     {
         *start = FScanNumber(startFile);
-        if (*start == NULL) FAIL("Invalid start number in start.txt");
+        if (*start == NULL) FAIL("Invalid start number in start.txt\n");
 
         fclose(startFile);
     }
@@ -113,7 +113,7 @@ static void ReadFileConfig(uintmax_t* threshold, LargeNumber** start, LargeNumbe
     if (endFile != NULL)
     {
         *end = FScanNumber(endFile);
-        if (*end == NULL) FAIL("Invalid end number in end.txt");
+        if (*end == NULL) FAIL("Invalid end number in end.txt\n");
 
         fclose(endFile);
     }
@@ -201,7 +201,7 @@ int main(int argc, char** argv)
         FILE* file = fopen("start.txt", "w");
         if (file == NULL)
         {
-            fprintf(stderr, "Unable to open start.txt");
+            fprintf(stderr, "Unable to open start.txt\n");
         }
         else
         {
